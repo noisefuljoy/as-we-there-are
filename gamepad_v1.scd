@@ -6,13 +6,54 @@ HID.findAvailable;
 HID.postAvailable;
 
 ~myhid = HID.open( 1133, 49686 );
+~myhid.close;
+
+HID.debug = false;
+~myhid.postUsages;
+
+
+/* eerste joystick */
+HIDdef.usage( \xaxis, { |value| Ndef(\fm7).set(\mod1, ~modRange.map(value)); }, \X );
+HIDdef.usage( \vertical, { |value| Ndef(\fm7).set(\mod2, ~modRange.map(value));  }, \Joystick );
+/* tweede joystick */
+HIDdef.usage( \xaxis2, { |value|  Ndef(\fm7).set(\mod3, ~modRange.map(value)); }, \Y );
+HIDdef.usage( \vertical2, { |value|  Ndef(\fm7).set(\mod4, ~modRange.map(value));  }, \Z );
+
+~modRange = [0.001, 9, \exp, 0.001].asSpec;
+
+Ndef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0|
+    var ctls, mods, chans, sig;
+    ctls = [
+        // freq, phase, amp
+        [LFNoise1.kr(0.5).range(300, 310), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 310), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1]
+    ];
+    mods = [
+        [Line.kr(0, 0.001, 2), Line.kr(0.1, 0, 4), 0, mod2, 0, 0],
+        [mod1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, mod3, 0],
+        [0, 0, 0, 0, mod4, 0],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
+    ];
+    chans = [0, 1];
+    sig = FM7.ar(ctls, mods).slice(chans) * -12.dbamp; // using "slice" to select specific channels
+
+	sig = FreeVerb2.ar(sig[0],sig[1], 0.4, 0.7,0.8);
+
+}).play;
+
+
+Server.default.makeGui
+
 
 s.boot;
 
-Ndef( \sinewave, { |freq=500, amp=0.1| SinOsc.ar( freq, 0, amp * 0.2 ) } );
-Ndef( \sinewave ).play;
-
-
+FM7
 
 Ndef(\t,{
 
@@ -31,3 +72,67 @@ HIDdef.usage( \amp, { |value| Ndef( \sinewave ).set( \amp, value ); }, \Y );
 
 
 Ndef( \sinewave ).free;
+
+Quarks.gui
+
+
+
+
+(
+{
+    var ctls = [
+        // freq, phase, amp
+        [LFNoise1.kr(0.5).range(300, 310), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 310), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+        [LFNoise1.kr(0.5).exprange(3, 100), 0, 1]
+    ];
+    FM7.arAlgo(1, ctls, MouseX.kr(0, 2))
+}.play
+
+)
+
+
+(
+// Courtesy Fredrik Olofsson (2008)
+Routine.run{
+    var syn, time = 3; // Allow each patch to run for 16sec / 8bars
+    inf.do{|i|
+        ("// FM7 patch"+i).post;
+        syn= ("
+            (
+            var x= #"++({{{ |i| rrand(0.5, 1.5).round(0.5)}!4}!3}!6).asCompileString++";
+            var y= #"++({{{ |i| rrand(0.2, 1.6).round(0.5)}!4}!6}!6).asCompileString++";
+            {
+                var ctls= x.collect{|a| a.collect{|b| LFSaw.kr(*b)}};
+                var mods= y.collect{|a| a.collect{|b| LFPar.kr(*b)}};
+                var chans= #[0, 1];
+                FM7.ar(ctls, mods).slice(chans)*0.5;
+            }.play)").postln.interpret;
+        time.wait;
+        syn.free;
+    };
+};
+)
+
+(
+// Courtesy Fredrik Olofsson (2008), edited by <sk>
+// FM7 patch 4 generated on Thu Jun 26 18:27:12 2008
+            (
+            var x= #[ [ [ 0.0, -0.33333333333333, -1.0, 0.0 ], [ 0.75, 0.75, 0.0, -0.5 ], [ -0.5, -0.25, 0.25, -0.75 ], [ -0.5, 1.0, 1.0, 1.0 ], [ 0.0, 0.16666666666667, -0.75, -1.0 ], [ 0.5, 0.5, -0.5, 0.33333333333333 ] ], [ [ -0.33333333333333, 0.5, -0.5, -0.5 ], [ 0.5, 0.75, 0.25, 0.75 ], [ -0.83333333333333, 0.25, -1.0, 0.5 ], [ 1.5, 0.25, 0.25, -0.25 ], [ -0.66666666666667, -0.66666666666667, -1.0, -0.5 ], [ -1.0, 0.0, -0.83333333333333, -0.33333333333333 ] ], [ [ 0.25, -0.5, -0.5, -1.0 ], [ -0.5, 1.0, -1.5, 0.0 ], [ -1.0, -1.5, -0.5, 0.0 ], [ 0.5, -1.0, 1.1666666666667, -0.5 ], [ 0.83333333333333, -0.75, -1.5, 0.5 ], [ 0.25, -1.0, 0.5, 1.0 ] ], [ [ 1.0, 0.33333333333333, 0.0, -0.75 ], [ -0.25, 0.0, 0.0, -0.5 ], [ -0.5, -0.5, 0.0, 0.5 ], [ 1.0, 0.75, 0.5, 0.5 ], [ 0.0, 1.5, -0.5, 0.0 ], [ 1.0, 0.0, -0.25, -0.5 ] ], [ [ 0.5, -0.25, 0.0, 0.33333333333333 ], [ 0.25, -0.75, 0.33333333333333, -1.0 ], [ -0.25, -0.5, 0.25, -1.1666666666667 ], [ 0.0, 0.25, 0.5, 0.16666666666667 ], [ -1.0, -0.5, 0.83333333333333, -0.5 ], [ 0.83333333333333, -0.75, -0.5, 0.0 ] ], [ [ 0.0, -0.75, -0.16666666666667, 0.0 ], [ 1.0, 0.5, 0.5, 0.0 ], [ -0.5, 0.0, -0.5, 0.0 ], [ -0.5, -0.16666666666667, 0.0, 0.5 ], [ -0.25, 0.16666666666667, -0.75, 0.25 ], [ -1.1666666666667, -1.3333333333333, -0.16666666666667, 1.5 ] ] ];
+            var y= #[ [ [ 0.0, -0.5, 1.0, 0.0 ], [ -0.5, 1.0, 0.5, -0.5 ], [ 0.0, 0.33333333333333, 1.0, 1.0 ] ], [ [ -0.5, 0.5, 1.0, 1.0 ], [ 0.0, 0.33333333333333, 0.0, 1.5 ], [ -0.5, 0.83333333333333, 1.0, 0.0 ] ], [ [ 0.25, -0.66666666666667, 0.25, 0.0 ], [ 0.5, -0.5, -0.5, -0.5 ], [ 0.5, -0.5, -0.75, 0.83333333333333 ] ], [ [ -0.25, 1.0, 0.0, 0.33333333333333 ], [ -1.25, -0.25, 0.5, 0.0 ], [ 0.0, -1.25, -0.25, -0.5 ] ], [ [ 0.75, -0.25, 1.5, 0.0 ], [ 0.25, -1.5, 0.5, 0.5 ], [ -0.5, -0.5, -0.5, -0.25 ] ], [ [ 0.0, 0.5, -0.5, 0.25 ], [ 0.25, 0.5, -0.33333333333333, 0.0 ], [ 1.0, 0.5, -0.16666666666667, 0.5 ] ] ];
+            {
+                var ctls= x.collect{|a| a.collect{|b| SinOsc.ar(*b)}};
+                var mods= y.collect{|a| a.collect{|b| Pulse.ar(*b)}};
+                var chans= #[0, 1, 2, 4, 5];
+                (FM7.ar(ctls, mods).slice(chans) * [1, 1, LFSaw.kr(0.1).range(0, -12.dbamp), 1, -3.dbamp]).clump(2).sum*0.5;
+            }.play)
+)
+
+
+
+
+
+
