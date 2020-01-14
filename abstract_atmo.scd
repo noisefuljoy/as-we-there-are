@@ -10,3 +10,7 @@ Ndef(\t,{
 
 
 }).play;
+
+
+
+HID.findAvailable;
