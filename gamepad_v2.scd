@@ -1,5 +1,5 @@
 
-/* open and re-open device after being detached*/
+/* re-open device after being detached*/
 (
 Tdef( 'tryOpenHID' , {
    var keepLooking = true;
@@ -28,32 +28,21 @@ Tdef( 'tryOpenHID' , {
       }
    }
 } );
-);
+
 Tdef( 'tryOpenHID' ).play;
 
 
-
-HID.findAvailable;
-HID.postAvailable;
-
-~myhid = HID.open( 1133, 49686 );
-~myhid.close;
-
+/*
 HID.debug = false;
 ~myhid.postUsages;
+*/
 
 
-/* eerste joystick */
-HIDdef.usage( \xaxis, { |value| Ndef(\fm7).set(\mod1, ~modRange.map(value)); }, \X );
-HIDdef.usage( \vertical, { |value| Ndef(\fm7).set(\mod2, ~modRange.map(value));  }, \Joystick );
-/* tweede joystick */
-HIDdef.usage( \xaxis2, { |value|  Ndef(\fm7).set(\mod3, ~modRange.map(value)); }, \Y );
-HIDdef.usage( \vertical2, { |value|  Ndef(\fm7).set(\mod4, ~modRange.map(value));  }, \Z );
 
-~modRange = [0.001, 9, \exp, 0.001].asSpec;
 
-Ndef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0|
-    var ctls, mods, chans, sig;
+SynthDef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0 gate=1|
+    var env, ctls, mods, chans, sig;
+	env = EnvGen.ar(Env.adsr(1.0,0.1,0.5,2.0),gate, doneAction: 2);
     ctls = [
         // freq, phase, amp
         [LFNoise1.kr(0.5).range(300, 310), 0, 1],
@@ -66,17 +55,87 @@ Ndef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0|
     mods = [
         [Line.kr(0, 0.001, 2), Line.kr(0.1, 0, 4), 0, mod2, 0, 0],
         [mod1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, mod3, 0],
-        [0, 0, 0, 0, mod4, 0],
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0]
+        [0, mod4, 0, 0, mod3, 0],
+        [0, mod3, 0, 0, mod4, 0],
+        [mod4, 0, 0, 0, 0, 0],
+        [mod3, 0, 0, 0, 0, 0]
     ];
     chans = [0, 1];
     sig = FM7.ar(ctls, mods).slice(chans) * -12.dbamp; // using "slice" to select specific channels
-
+	sig = CombC.ar(sig, 0.1, LFNoise2.kr(1.8).range(0.01,0.1),SinOsc.kr(0.2).range(0.1,8.0),0.5,sig*0.5);
 	sig = FreeVerb2.ar(sig[0],sig[1], 0.4, 0.7,0.8);
+	Out.ar(0, sig*env);
+}).add;
 
-}).play;
+
+
+
+~modRange = [0.001, 9, \exp, 0.001].asSpec;
+
+~mainGroup = Group.new;
+~fmGroup = Group.new(~mainGroup);
+~fm1Group = Group.new(~fmGroup);
+~fm1Group = Group.new(~fmGroup);
+~fm1Group = Group.new(~fmGroup);
+
+~freezeSwitch = 0;
+
+
+);
+(
+
+/*    LOGITECH DUAL ACTION MAPPING */
+/* main buttons */
+
+/* synth trigger */
+HIDdef.usage( \main_but_1, { |value|
+	if ( ~freezeSwitch == 0, {
+		if ( value == 1, {
+			Synth(\fm7, [\gate,1], ~fm1Group); }, { ~fm1Group.set(\gate, 0); });
+	});
+	}, \b5 );
+
+/* freeze button */
+HIDdef.usage( \main_but_2, { |value|
+	if ( value == 1, {
+		if ( ~freezeSwitch == 0, { ~freezeSwitch = 1; "frozen".postln; }, { ~freezeSwitch = 0; "unfrozen".postln; });
+	});
+}, \b6 );
+
+
+HIDdef.usage( \main_but_3, { |value|  value.postln; }, \b7 );
+HIDdef.usage( \main_but_4, { |value|  value.postln; }, \b8 );
+
+
+/* eerste joystick */
+HIDdef.usage( \x_ax_1, { |value|
+	if ( ~freezeSwitch == 0, {
+		~fmGroup.set(\mod1, ~modRange.map(value));
+	});
+
+	}, \X );
+HIDdef.usage( \y_ax_1, { |value|
+	if ( ~freezeSwitch == 0, {
+		~fmGroup.set(\mod2, ~modRange.map(value));
+	});
+	}, \Joystick );
+HIDdef.usage( \joy_but_1, { |value|  value.postln; }, \b11 );
+
+/* tweede joystick */
+HIDdef.usage( \x_ax_2, { |value|
+	if ( ~freezeSwitch == 0, {
+		~fmGroup.set(\mod3, ~modRange.map(value));
+	});
+	}, \Y );
+HIDdef.usage( \y_ax_2, { |value| if ( ~freezeSwitch == 0, {
+	~fmGroup.set(\mod4, ~modRange.map(value));
+});
+}, \Z );
+
+HIDdef.usage( \joy_but_2, { |value|  value.postln; }, \b12 );
+
+);
+
 
 
 Server.default.makeGui
