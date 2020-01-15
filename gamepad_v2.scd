@@ -37,10 +37,19 @@ HID.debug = false;
 ~myhid.postUsages;
 */
 
+SynthDef(\kick, {|out=0 amp=0.5 release=0.2 bufnum pan=0|
+	var env, sig;
+	env = EnvGen.ar(Env.perc(0.001, release),doneAction: 2);
+	sig = PlayBuf.ar(1, bufnum, BufRateScale.kr(bufnum), 1, 0,0);
+	Out.ar(out, Pan2.ar( sig*env*amp, pan)); }).add;
 
+SynthDef(\field_rec, {|out=0 amp=1 gate=1 bufnum|
+	var env, sig;
+	env = EnvGen.ar(Env.adsr(1.0,0.1,0.5,3.0),gate,doneAction: 2);
+	sig = PlayBuf.ar(2, bufnum, BufRateScale.kr(bufnum), 1, 0, 1);
+	Out.ar(out, sig*env*amp); }).add;
 
-
-SynthDef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0 gate=1|
+SynthDef(\fm7, {|out=0 mod1=0, mod2=0, mod3=0, mod4=0 gate=1|
     var env, ctls, mods, chans, sig;
 	env = EnvGen.ar(Env.adsr(1.0,0.1,0.5,2.0),gate, doneAction: 2);
     ctls = [
@@ -63,8 +72,8 @@ SynthDef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0 gate=1|
     chans = [0, 1];
     sig = FM7.ar(ctls, mods).slice(chans) * -12.dbamp; // using "slice" to select specific channels
 	sig = CombC.ar(sig, 0.1, LFNoise2.kr(1.8).range(0.01,0.1),SinOsc.kr(0.2).range(0.1,8.0),0.5,sig*0.5);
-	sig = FreeVerb2.ar(sig[0],sig[1], 0.4, 0.7,0.8);
-	Out.ar(0, sig*env);
+	//sig = FreeVerb2.ar(sig[0],sig[1], 0.4, 0.7,0.8);
+	Out.ar(out, sig*env);
 }).add;
 
 
@@ -73,16 +82,37 @@ SynthDef(\fm7, {|mod1=0, mod2=0, mod3=0, mod4=0 gate=1|
 ~modRange = [0.001, 9, \exp, 0.001].asSpec;
 
 ~mainGroup = Group.new;
+~fieldrecGroup = Group.new(~mainGroup);
 ~fmGroup = Group.new(~mainGroup);
 ~fm1Group = Group.new(~fmGroup);
 ~fm1Group = Group.new(~fmGroup);
 ~fm1Group = Group.new(~fmGroup);
 
 ~freezeSwitch = 0;
+~fieldrecSwitch = 0;
+~fieldrecnum = 0;
 
+~field_rec_files = "field_recs/*.wav".pathMatch;
+~field_recs = ~field_rec_files.collect({|sample| Buffer.read(s, sample); });
+
+~field_recs.size
 
 );
 (
+
+MIDIIn.connectAll;
+/* nanoKontrol  */
+
+MIDIdef.new(\test1, {|val num chan dev| [num, val].postln}, nil, 1, \control, nil);
+
+/* nanoPad */
+
+MIDIdef.new(\test2, {|val num chan dev| [num, val].postln}, nil, nil, \noteOn, nil);
+
+
+//MIDIdef.freeAll;
+
+
 
 /*    LOGITECH DUAL ACTION MAPPING */
 /* main buttons */
@@ -102,8 +132,18 @@ HIDdef.usage( \main_but_2, { |value|
 	});
 }, \b6 );
 
+HIDdef.usage( \main_but_3, { |value|
+	if ( value == 1, {
+		if ( ~fieldrecSwitch == 0, { "play field rec".postln;
+			Synth(\field_rec, [\gate,1,\bufnum,~field_recs[~fieldrecnum]], ~fieldrecGroup);
+			~fieldrecSwitch = 1;
+			if ( ~fieldrecnum == (~field_recs.size-1), { ~fieldrecnum = 0; }, { ~fieldrecnum = ~fieldrecnum + 1; });
+		},
+		{  "stop field rec".postln; ~fieldrecGroup.set(\gate, 0);  ~fieldrecSwitch = 0; });
+	});
+	 }, \b7 );
 
-HIDdef.usage( \main_but_3, { |value|  value.postln; }, \b7 );
+
 HIDdef.usage( \main_but_4, { |value|  value.postln; }, \b8 );
 
 
@@ -133,6 +173,8 @@ HIDdef.usage( \y_ax_2, { |value| if ( ~freezeSwitch == 0, {
 }, \Z );
 
 HIDdef.usage( \joy_but_2, { |value|  value.postln; }, \b12 );
+
+
 
 );
 
