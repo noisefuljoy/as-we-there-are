@@ -84,6 +84,18 @@ SynthDef(\perc_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
 	Out.ar(out, Pan2.ar(sig*amp, SinOsc.kr(LFNoise0.kr(0.8).range(0.1,80.0)).range(-0.25,0.25)));
 }).store;
 
+SynthDef(\dist_effect, {|in=0 out=0 amp=1.0 mix=0.0 decay=1|
+	var sig,drysig, wetsig;
+	drysig = In.ar(in, 1);
+	wetsig = drysig;
+	wetsig = Decimator.ar(wetsig, 10000,8);
+	2.do{|i| var del = (i+1)*0.1;
+		wetsig = CombC.ar(wetsig, del, SinOsc.kr(del*0.1).range(del*0.1,del),(i+1)*decay,0.4,wetsig*0.6);
+	};
+	sig = ((1-mix)*drysig) + (mix*wetsig);
+	Out.ar(out, Pan2.ar(sig*amp, SinOsc.kr(LFNoise0.kr(0.8).range(0.1,80.0)).range(-0.25,0.25)));
+}).store;
+
 SynthDef(\field_rec, {|out=0 amp=0.4 gate=1 bufnum|
 	var env, sig;
 	env = EnvGen.ar(Env.adsr(1.0,0.1,0.5,3.0),gate,doneAction: 2);
@@ -117,16 +129,38 @@ SynthDef(\fm7, {|out=0 amp=0.4 mod1=0, mod2=0, mod3=0, mod4=0 gate=1|
 	Out.ar(out, sig*env*amp);
 }).store;
 
+ SynthDef(\fmseven, {|out=0 amp=0.25 gate=1 mod1=1 mod2=1 mod3=1 mod4=1|
+
+	var env = EnvGen.ar(Env.adsr(5.0,0.1,1.0,6.0),gate, doneAction: 2);
+            var x= #[ [ [ 0.0, -0.33333333333333, -1.0, 0.0 ], [ 0.75, 0.75, 0.0, -0.5 ], [ -0.5, -0.25, 0.25, -0.75 ], [ -0.5, 1.0, 1.0, 1.0 ], [ 0.0, 0.16666666666667, -0.75, -1.0 ], [ 0.5, 0.5, -0.5, 0.33333333333333 ] ], [ [ -0.33333333333333, 0.5, -0.5, -0.5 ], [ 0.5, 0.75, 0.25, 0.75 ], [ -0.83333333333333, 0.25, -1.0, 0.5 ], [ 1.5, 0.25, 0.25, -0.25 ], [ -0.66666666666667, -0.66666666666667, -1.0, -0.5 ], [ -1.0, 0.0, -0.83333333333333, -0.33333333333333 ] ], [ [ 0.25, -0.5, -0.5, -1.0 ], [ -0.5, 1.0, -1.5, 0.0 ], [ -1.0, -1.5, -0.5, 0.0 ], [ 0.5, -1.0, 1.1666666666667, -0.5 ], [ 0.83333333333333, -0.75, -1.5, 0.5 ], [ 0.25, -1.0, 0.5, 1.0 ] ], [ [ 1.0, 0.33333333333333, 0.0, -0.75 ], [ -0.25, 0.0, 0.0, -0.5 ], [ -0.5, -0.5, 0.0, 0.5 ], [ 1.0, 0.75, 0.5, 0.5 ], [ 0.0, 1.5, -0.5, 0.0 ], [ 1.0, 0.0, -0.25, -0.5 ] ], [ [ 0.5, -0.25, 0.0, 0.33333333333333 ], [ 0.25, -0.75, 0.33333333333333, -1.0 ], [ -0.25, -0.5, 0.25, -1.1666666666667 ], [ 0.0, 0.25, 0.5, 0.16666666666667 ], [ -1.0, -0.5, 0.83333333333333, -0.5 ], [ 0.83333333333333, -0.75, -0.5, 0.0 ] ], [ [ 0.0, -0.75, -0.16666666666667, 0.0 ], [ 1.0, 0.5, 0.5, 0.0 ], [ -0.5, 0.0, -0.5, 0.0 ], [ -0.5, -0.16666666666667, 0.0, 0.5 ], [ -0.25, 0.16666666666667, -0.75, 0.25 ], [ -1.1666666666667, -1.3333333333333, -0.16666666666667, 1.5 ] ] ];
+            var y= #[ [ [ 0.0, -0.5, 1.0, 0.0 ], [ -0.5, 1.0, 0.5, -0.5 ], [ 0.0, 0.33333333333333, 1.0, 1.0 ] ], [ [ -0.5, 0.5, 1.0, 1.0 ], [ 0.0, 0.33333333333333, 0.0, 1.5 ], [ -0.5, 0.83333333333333, 1.0, 0.0 ] ], [ [ 0.25, -0.66666666666667, 0.25, 0.0 ], [ 0.5, -0.5, -0.5, -0.5 ], [ 0.5, -0.5, -0.75, 0.83333333333333 ] ], [ [ -0.25, 1.0, 0.0, 0.33333333333333 ], [ -1.25, -0.25, 0.5, 0.0 ], [ 0.0, -1.25, -0.25, -0.5 ] ], [ [ 0.75, -0.25, 1.5, 0.0 ], [ 0.25, -1.5, 0.5, 0.5 ], [ -0.5, -0.5, -0.5, -0.25 ] ], [ [ 0.0, 0.5, -0.5, 0.25 ], [ 0.25, 0.5, -0.33333333333333, 0.0 ], [ 1.0, 0.5, -0.16666666666667, 0.5 ] ] ];
+
+                var ctls= x.collect{|a| a.collect{|b| SinOsc.ar(*b)}};
+                var mods= y.collect{|a| a.collect{|b| Pulse.ar(*b)}};
+                var chans= #[0, 1, 2, 4, 5];
+	var sig = (FM7.ar(ctls, mods).slice(chans) * [mod1*2, mod2*2, LFSaw.kr(mod3*3).range(0, -12.dbamp), mod4, -3.dbamp]).clump(2).sum*0.5;
+
+	3.do{|i| var del = (i+2)*0.1;
+		sig = AllpassC.ar(sig,del,LFNoise0.kr(del).range(0.01,del),FSinOsc.kr(LFNoise0.kr(del*mod2).range(0.01,30.0)).range(0.1,(i+1)*(mod4)),0.75,sig*0.25); };
+
+	//sig = Mix(sig);
+	Out.ar(out, Pan2.ar(sig*env*amp, LFSaw.kr(LFNoise0.kr(0.8*mod3).range(3.0,120.0)).range(-1.0,1.0) ) );
+}).store;
+
 
 SynthDef(\magic_drone,{|out=0 amp=1.0 gate=1 ratio=1|
 
 	var env = EnvGen.ar(Env.adsr(3.0,0.1,1,4.0),gate, doneAction: 2);
 	var sig = VarSaw.ar([82.41,184.995,329.64]*ratio,[0,0,0],
-		[ SinOsc.kr(0.01).range(0.3,0.8), SinOsc.kr(0.02).range(0.1,0.7), SinOsc.kr(0.02).range(0.1,0.7) ],
+		[ SinOsc.kr(0.01).range(0.3,0.8), LFSaw.kr(0.02).range(0.01,0.5), LFTri.kr(0.04).range(0.5,0.99) ],
 		0.33!3);
 
 	sig = Mix(sig);
-	3.do{ sig = AllpassC.ar(sig,0.3,SinOsc.kr(0.003).range(0.001,0.3),LFNoise1.kr(0.2).range(1.0,8.0),0.25,sig*0.75); };
+	3.do{ |i| var del = (i+3)*0.1;
+
+		sig = AllpassC.ar(sig,0.3,SinOsc.kr(0.003).range(0.001,0.3),LFNoise1.kr(0.2).range(1.0,8.0),0.5,sig*0.5);
+
+	};
 	Out.ar(out, Pan2.ar(sig*env*amp, SinOsc.kr(0.1).range(-0.4,0.7))    );
 
 }).store;
@@ -143,23 +177,65 @@ SynthDef(\sjoerd_in, {|in=0 out=0 amp=0.8 gate=1 delAmount=0|
 	sig = MidEQ.ar(sig,230,0.6,-8);
 	sig = MidEQ.ar(sig,2000,0.6,5);
 	delsig = sig;
-	3.do{
-	delsig = AllpassC.ar(delsig,0.3,SinOsc.kr(0.003).range(0.001,0.3),LFNoise1.kr(0.2).range(1.0,8.0),0.25,delsig*0.9);
+	3.do{|i| var del = (i+1)*0.15;
+	delsig = AllpassC.ar(delsig,del,SinOsc.kr(0.003).range(0.01,del),LFNoise1.kr(del).range(1.0,8.0),0.25,delsig*0.9);
 	};
+	/*
+	3.do{|i| var del = (i+1)*0.1;
+	delsig = CombC.ar(delsig,del,SinOsc.kr(del*0.001).range(0.01,del),LFNoise1.kr(del).range(1.0,3.0),0.3,delsig*0.7);
+	};
+	*/
 	sig = ((1-delAmount)*sig) + (delAmount * delsig);
 	Out.ar(out, Pan2.ar(sig*env*amp,0)    );
 
 }).store;
 
+
+
+SynthDef(\mari_in, {|in=0 out=0 amp=0.8 gate=1 delAmount=0 bpAmount=0|
+
+	var env, sig, bpsig, delsig;
+	env = EnvGen.ar(Env.adsr(3.0,0.1,1,4.0),gate, doneAction: 2);
+	sig = SoundIn.ar(in);
+
+
+	sig = HPF.ar(sig, 100);
+	sig = MidEQ.ar(sig,230,0.6,-12);
+	sig = MidEQ.ar(sig,1000,0.6,3);
+	sig = MidEQ.ar(sig,2000,0.6,8);
+	/*
+	bpsig = BPF.ar(sig, 1000,0.3,4.0).tanh;
+	sig = ((1-bpAmount)*sig) + (bpAmount * bpsig);
+	*/
+	delsig = sig;
+
+
+	//delsig = PitchShift.ar(sig,0.2,1.15,0.1,0.1);
+
+	3.do{|i| var del = (i+1)*0.15;
+	delsig = AllpassC.ar(delsig,del,SinOsc.kr(0.003).range(0.01,del),LFNoise1.kr(del).range(1.0,8.0),0.25,delsig*0.9);
+	};
+	3.do{|i| var del = (i+1)*0.1;
+	delsig = CombC.ar(delsig,del,SinOsc.kr(del*0.001).range(0.01,del),LFNoise1.kr(del).range(1.0,3.0),0.3,delsig*0.7);
+	};
+
+	sig = ((1-delAmount)*sig) + (delAmount * delsig);
+	Out.ar(out, Pan2.ar(sig*env*amp,0));
+}).store;
+
+
+
 // a custom envelope
 SynthDef(\field_grain, { |out=0, gate = 1, amp = 1, sndbuf, envbuf, trate=10 dur=0.1|
-    var pan, env, freqdev;
+    var sig, pan, env, freqdev;
 
     env = EnvGen.kr(
         Env([0, 1, 0], [1, 1], \sin, 1),
         gate,
         levelScale: amp,
         doneAction: Done.freeSelf);
+
+
     Out.ar(out,
         GrainBuf.ar(2, Impulse.kr(trate), dur, sndbuf, LFNoise1.kr.range(0.5, 2),
 			LFNoise2.kr(0.4).range(0, 1), 2, FSinOsc.kr(LFNoise0.kr(3.2).range(0.1,60.0)).range(-1.0,1.0), envbuf) * env)
@@ -182,7 +258,9 @@ RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
 ~ampRange = [0.25, 1.0, \linear, 0.001].asSpec;
 ~relRange = [0.1, 2.0, \linear, 0.001].asSpec;
 ~decRange = [0.001, 30.0, \exp, 0.001].asSpec;
-~ratioSpec = [0.125, 2.0, -2, 0.001].asSpec;
+~ratioSpec = [0, 15, \linear, 1].asSpec;
+
+~ratios = [0.25,0.25,0.5,0.75,0.85,0.9,1,1.1,1.2,1.3,1.4,1.5,1.75,1.8,1.9,2.0];
 
 ~lengthSpec = [1.0,0.001,\exp].asSpec;
 ~trateSpec = [1.0,500.0,\exp].asSpec;
@@ -207,6 +285,15 @@ RecordBuf.ar(input, recbuf,loop:0,trigger:onsets);
 
 ~kick_files = (Platform.resourceDir +/+ "sounds/kicks/*.wav").pathMatch;
 ~kicks = ~kick_files.collect({|i| Buffer.read(s, i); });
+
+~hat_files = "Drums/HiHat/*.wav".pathMatch;
+~hats = ~hat_files.collect({|i| Buffer.read(s, i); });
+
+~cymbal_files = "Drums/Cymbal/*.wav".pathMatch;
+~cymbals = ~cymbal_files.collect({|i| Buffer.read(s, i); });
+
+~combo_files = "Drums/Combo/*.wav".pathMatch;
+~combo = ~combo_files.collect({|i| Buffer.read(s, i); });
 
 ~mallet_files = "Drums/Mallet_Drum/*.wav".pathMatch;
 ~mallets = ~mallet_files.collect({|i| Buffer.read(s, i); });
@@ -253,13 +340,15 @@ MIDIdef.new(\test1, {|val num chan dev|
 	case
 	{ num == 24 } {
 		if ( val == 127, {  ~droneSynth = Synth(\magic_drone); }, { ~droneSynth.set(\gate, 0); }); }
-	{ num == 32 } { ~droneSynth.set(\ratio, ~ratioSpec.map(val/127); ); }
+	{ num == 32 } { ~droneSynth.set(\ratio, ~ratios[~ratioSpec.map(val/127);]; ); }
 	{ num == 25 } {
 		if ( val == 127, {  ~sjoerdSynth = Synth(\sjoerd_in,[\in,0]); }, { ~sjoerdSynth.set(\gate, 0); }); }
 	{ num == 33 } { ~sjoerdSynth.set(\delAmount, val/127); }
 	 { num == 26 } {
-		if ( val == 127, {  ~mariSynth = Synth(\sjoerd_in,[\in,1]); },
+		if ( val == 127, {  ~mariSynth = Synth(\mari_in,[\in,1]); },
 		{ ~mariSynth.set(\gate, 0); }); }
+	{ num == 34 } { ~mariSynth.set(\delAmount, val/127); }
+	{ num == 18 } { if ( val == 127, { ~mariSynth.set(\bpAmount, 0.75); }, { ~mariSynth.set(\bpAmount, 0); }); }
 
 	{ num == 27 }
 	{
@@ -325,11 +414,31 @@ Pbindef(("grainpattern1"++i).asSymbol,\instrument, \radioplaypattern,\group,~mai
 
 MIDIdef.new(\test2, {|val num chan dev|
 	case
-	{ num == 36 } { Synth(\kick, [\bufnum, ~kicks.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	{ num == 36 } { Synth(\kick, [\bufnum, ~kicks.choose,
+		\release, ~relRange.map(val/127),
+		\amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 37 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 38 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 39 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
 	}
 	{ num == 40 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
 	}
 	{ num == 41 } { Synth(\perc, [\out, ~percBus, \bufnum, ~hand_drums.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 42 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 43 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 44 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 45 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 46 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
+	}
+	{ num == 47 } { Synth(\perc, [\out, ~percBus, \bufnum, ~mallets.choose, \amp,~ampRange.map(val/127) ], ~percGroup);
 	};
 
 
@@ -343,13 +452,45 @@ MIDIdef.new(\test2, {|val num chan dev|
 
 /*    LOGITECH DUAL ACTION MAPPING */
 /* main buttons */
+~fmSwitch = 0;
+
+HIDdef.usage( \button_1, { |value|
+
+	if ( value == 0, {
+	if ( ~fmSwitch != 1, { ~fmSwitch = ~fmSwitch + 1; },
+		{
+			~fmSwitch = 0;
+
+	});
+	("fm synth : "++~fmSwitch).postln;
+
+	});
+
+}, \b1 );
+
 
 /* synth trigger */
 HIDdef.usage( \main_but_1, { |value|
 	if ( ~freezeSwitch == 0, {
 		if ( value == 1, {
-			Synth(\fm7, [\gate,1], ~fm1Group); }, { ~fm1Group.set(\gate, 0); });
-	});
+
+			case
+			{ ~fmSwitch == 0 }
+			{
+
+				Synth(\fm7, [\gate,1], ~fm1Group); }
+			{ ~fmSwitch == 1 }
+			{
+				Synth(\fmseven, [\gate,1], ~fm1Group);
+
+			};
+
+
+		}, { ~fm1Group.set(\gate, 0);  });
+
+		});
+
+
 	}, \b5 );
 
 /* freeze button */
@@ -531,16 +672,7 @@ Routine.run{
 (
 // Courtesy Fredrik Olofsson (2008), edited by <sk>
 // FM7 patch 4 generated on Thu Jun 26 18:27:12 2008
-            (
-            var x= #[ [ [ 0.0, -0.33333333333333, -1.0, 0.0 ], [ 0.75, 0.75, 0.0, -0.5 ], [ -0.5, -0.25, 0.25, -0.75 ], [ -0.5, 1.0, 1.0, 1.0 ], [ 0.0, 0.16666666666667, -0.75, -1.0 ], [ 0.5, 0.5, -0.5, 0.33333333333333 ] ], [ [ -0.33333333333333, 0.5, -0.5, -0.5 ], [ 0.5, 0.75, 0.25, 0.75 ], [ -0.83333333333333, 0.25, -1.0, 0.5 ], [ 1.5, 0.25, 0.25, -0.25 ], [ -0.66666666666667, -0.66666666666667, -1.0, -0.5 ], [ -1.0, 0.0, -0.83333333333333, -0.33333333333333 ] ], [ [ 0.25, -0.5, -0.5, -1.0 ], [ -0.5, 1.0, -1.5, 0.0 ], [ -1.0, -1.5, -0.5, 0.0 ], [ 0.5, -1.0, 1.1666666666667, -0.5 ], [ 0.83333333333333, -0.75, -1.5, 0.5 ], [ 0.25, -1.0, 0.5, 1.0 ] ], [ [ 1.0, 0.33333333333333, 0.0, -0.75 ], [ -0.25, 0.0, 0.0, -0.5 ], [ -0.5, -0.5, 0.0, 0.5 ], [ 1.0, 0.75, 0.5, 0.5 ], [ 0.0, 1.5, -0.5, 0.0 ], [ 1.0, 0.0, -0.25, -0.5 ] ], [ [ 0.5, -0.25, 0.0, 0.33333333333333 ], [ 0.25, -0.75, 0.33333333333333, -1.0 ], [ -0.25, -0.5, 0.25, -1.1666666666667 ], [ 0.0, 0.25, 0.5, 0.16666666666667 ], [ -1.0, -0.5, 0.83333333333333, -0.5 ], [ 0.83333333333333, -0.75, -0.5, 0.0 ] ], [ [ 0.0, -0.75, -0.16666666666667, 0.0 ], [ 1.0, 0.5, 0.5, 0.0 ], [ -0.5, 0.0, -0.5, 0.0 ], [ -0.5, -0.16666666666667, 0.0, 0.5 ], [ -0.25, 0.16666666666667, -0.75, 0.25 ], [ -1.1666666666667, -1.3333333333333, -0.16666666666667, 1.5 ] ] ];
-            var y= #[ [ [ 0.0, -0.5, 1.0, 0.0 ], [ -0.5, 1.0, 0.5, -0.5 ], [ 0.0, 0.33333333333333, 1.0, 1.0 ] ], [ [ -0.5, 0.5, 1.0, 1.0 ], [ 0.0, 0.33333333333333, 0.0, 1.5 ], [ -0.5, 0.83333333333333, 1.0, 0.0 ] ], [ [ 0.25, -0.66666666666667, 0.25, 0.0 ], [ 0.5, -0.5, -0.5, -0.5 ], [ 0.5, -0.5, -0.75, 0.83333333333333 ] ], [ [ -0.25, 1.0, 0.0, 0.33333333333333 ], [ -1.25, -0.25, 0.5, 0.0 ], [ 0.0, -1.25, -0.25, -0.5 ] ], [ [ 0.75, -0.25, 1.5, 0.0 ], [ 0.25, -1.5, 0.5, 0.5 ], [ -0.5, -0.5, -0.5, -0.25 ] ], [ [ 0.0, 0.5, -0.5, 0.25 ], [ 0.25, 0.5, -0.33333333333333, 0.0 ], [ 1.0, 0.5, -0.16666666666667, 0.5 ] ] ];
-            {
-                var ctls= x.collect{|a| a.collect{|b| SinOsc.ar(*b)}};
-                var mods= y.collect{|a| a.collect{|b| Pulse.ar(*b)}};
-                var chans= #[0, 1, 2, 4, 5];
-                (FM7.ar(ctls, mods).slice(chans) * [1, 1, LFSaw.kr(0.1).range(0, -12.dbamp), 1, -3.dbamp]).clump(2).sum*0.5;
-            }.play)
-)
+
 
 
 
