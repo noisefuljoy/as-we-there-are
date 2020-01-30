@@ -56,7 +56,7 @@ Ndef(\banjo_sine_drone4, {|ratio=2 delmod=1 del=1|
 ~deldecRange = [1,100000,\exp,0.001].asSpec;
 ~delRange = [1,100,\exp,0.001].asSpec;
 
-MIDIIn.connectAll;
+//MIDIIn.connectAll;
 
 MIDIdef.new(\test2, {|val num chan dev|
 	[num, val].postln;
@@ -67,8 +67,8 @@ MIDIdef.new(\test2, {|val num chan dev|
 			~banjodrones.put(0,
 			Ndef(\banjo_sine_drone1, {|ratio=2 delmod=1 del=1 fadeTime=3|
 
-						var sig = PlayBuf.ar(1, ~grainfield_recs[3],
-						BufRateScale.kr(~grainfield_recs[3])*SinOsc.kr(LFNoise2.kr(0.8).range(0.0001,0.001)).range(0.98,1.015),
+						var sig = PlayBuf.ar(1, ~grainfield_recs[4],
+						BufRateScale.kr(~grainfield_recs[4])*SinOsc.kr(LFNoise2.kr(0.8).range(0.0001,0.001)).range(0.98,1.015),
 							1,0,1);
 
 Pan2.ar(AllpassC.ar(sig, 0.1,SinOsc.kr(LFNoise0.kr(0.2).range(0.001,0.01*del )).range(0.001,0.1),SinOsc.kr(0.002*delmod).range(0.1,8.0),0.55,sig*0.25), SinOsc.kr(0.02).range(-0.25,0.25));
